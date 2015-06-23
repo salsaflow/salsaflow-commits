@@ -55,7 +55,7 @@ func run() (err error) {
 	commits.Methods("GET").Handler(getMetadataBatch(conn))
 	commits.Methods("POST").Handler(postMetadataBatch(conn))
 
-	commit := commits.PathPrefix("/{sha:[0-9a-f]{40}}")
+	commit := commits.PathPrefix("/{sha:[0-9a-f]+}")
 	commit.Methods("GET").Handler(getMetadata(conn))
 	commit.Methods("POST").Handler(postMetadata(conn))
 
