@@ -52,7 +52,7 @@ func run() (err error) {
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
 	}).HandlerFuncWithNext)
 
-	n.UseFunc(tokenMiddleware(accessToken))
+	n.Use(tokenMiddleware(accessToken))
 	n.UseHandler(router)
 
 	// Start the server using graceful.
