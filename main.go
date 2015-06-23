@@ -2,11 +2,13 @@ package main
 
 import (
 	"log"
-	"syscall"
+	"net/http"
+	"time"
 
 	"github.com/codegangsta/negroni"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/mux"
+	"github.com/unrolled/secure"
 	"gopkg.in/tylerb/graceful.v1"
 )
 
@@ -54,7 +56,8 @@ func run() (err error) {
 	n.UseHandler(router)
 
 	// Start the server using graceful.
-	graceful.Run(srv.addr, srv.timeout, n)
+	graceful.Run(addr, 3*time.Second, n)
+	return nil
 }
 
 func tokenMiddleware(accessToken string) negroni.Handler {
@@ -69,4 +72,8 @@ func tokenMiddleware(accessToken string) negroni.Handler {
 			// Proceed.
 			next(rw, r)
 		})
+}
+
+func httpError(rw http.ResponseWriter, code int) {
+	http.Error(rw, http.StatusText(code), code)
 }
