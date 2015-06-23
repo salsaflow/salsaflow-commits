@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/codegangsta/negroni"
@@ -24,17 +25,27 @@ func run() (err error) {
 	defer recoverEnvironPanic(&err)
 
 	var (
-		addr        = ":" + mustGetenv("PORT")
-		redisURL    = mustGetenv("REDISCLOUD_URL")
-		accessToken = mustGetenv("ACCESS_TOKEN")
+		addr          = ":" + mustGetenv("PORT")
+		rediscloudURL = mustGetenv("REDISCLOUD_URL")
+		accessToken   = mustGetenv("ACCESS_TOKEN")
 	)
 
 	// Connect to Redis.
-	conn, err := redis.Dial("tcp", redisURL)
+	redisURL, err := url.Parse(rediscloudURL)
+	if err != nil {
+		return err
+	}
+
+	conn, err := redis.Dial("tcp", redisURL.Host)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
+
+	redisPwd, _ := redisURL.User.Password()
+	if _, err := conn.Do("AUTH", redisPwd); err != nil {
+		return err
+	}
 
 	// Router.
 	router := mux.NewRouter()
