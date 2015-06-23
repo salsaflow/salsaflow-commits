@@ -36,13 +36,17 @@ func run() (err error) {
 	}
 	defer conn.Close()
 
-	// Top-level router.
+	// Router.
 	router := mux.NewRouter()
 
 	// Commits.
-	commits := router.PathPrefix("/commits/{sha:[0-9a-f]+}")
-	commits.Methods("GET").Handler(getMetadata(conn))
-	commits.Methods("POST").Handler(postMetadata(conn))
+	commits := router.PathPrefix("/commits")
+	commits.Methods("GET").Handler(getMetadataBatch(conn))
+	commits.Methods("POST").Handler(postMetadataBatch(conn))
+
+	commit := commits.PathPrefix("/{sha:[0-9a-f]+}")
+	commit.Methods("GET").Handler(getMetadata(conn))
+	commit.Methods("POST").Handler(postMetadata(conn))
 
 	// Negroni middleware.
 	n := negroni.New(negroni.NewRecovery(), negroni.NewLogger())
