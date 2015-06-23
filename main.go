@@ -44,7 +44,7 @@ func run() (err error) {
 	commits.Methods("GET").Handler(getMetadataBatch(conn))
 	commits.Methods("POST").Handler(postMetadataBatch(conn))
 
-	commit := commits.PathPrefix("/{sha:[0-9a-f]+}")
+	commit := commits.PathPrefix("/{sha:[0-9a-f]{40}}")
 	commit.Methods("GET").Handler(getMetadata(conn))
 	commit.Methods("POST").Handler(postMetadata(conn))
 
@@ -69,15 +69,11 @@ func tokenMiddleware(accessToken string) negroni.Handler {
 		func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 			// Make sure the token header matches.
 			if token := r.Header.Get(TokenHeader); token != accessToken {
-				httpError(rw, http.StatusForbidden)
+				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
 
 			// Proceed.
 			next(rw, r)
 		})
-}
-
-func httpError(rw http.ResponseWriter, code int) {
-	http.Error(rw, http.StatusText(code), code)
 }
