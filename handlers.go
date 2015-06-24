@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"regexp"
 
@@ -36,12 +34,8 @@ func getMetadata(c *mgo.Collection) http.Handler {
 
 		// Return the record.
 		delete(commit, "_id")
-		var payload bytes.Buffer
-		if err := json.NewEncoder(&payload).Encode(commit); err != nil {
-			httpError(rw, r, err)
-			return
-		}
-		io.Copy(rw, &payload)
+		rw.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(rw).Encode(commit)
 	})
 }
 
