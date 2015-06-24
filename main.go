@@ -28,9 +28,9 @@ func run() (err error) {
 	var (
 		host          = os.Getenv("HOST")
 		port          = os.Getenv("PORT")
+		isDevelopment = os.Getenv("DEVEL") != ""
 		rediscloudURL = mustGetenv("REDISCLOUD_URL")
 		accessToken   = mustGetenv("ACCESS_TOKEN")
-		isDevelopment = os.Getenv("DEVEL") != ""
 	)
 
 	// Get the listening address.
