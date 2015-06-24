@@ -35,6 +35,7 @@ func getMetadata(c *mgo.Collection) http.Handler {
 		}
 
 		// Return the record.
+		delete(commit, "_id")
 		var payload bytes.Buffer
 		if err := json.NewEncoder(&payload).Encode(commit); err != nil {
 			httpError(rw, r, err)
