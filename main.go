@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/codegangsta/negroni"
@@ -28,6 +29,7 @@ func run() (err error) {
 		addr          = ":" + mustGetenv("PORT")
 		rediscloudURL = mustGetenv("REDISCLOUD_URL")
 		accessToken   = mustGetenv("ACCESS_TOKEN")
+		isDevelopment = os.Getenv("DEVEL") != ""
 	)
 
 	// Connect to Redis.
@@ -42,9 +44,11 @@ func run() (err error) {
 	}
 	defer conn.Close()
 
-	redisPwd, _ := redisURL.User.Password()
-	if _, err := conn.Do("AUTH", redisPwd); err != nil {
-		return err
+	if redisURL.User != nil {
+		redisPwd, _ := redisURL.User.Password()
+		if _, err := conn.Do("AUTH", redisPwd); err != nil {
+			return err
+		}
 	}
 
 	// Router.
@@ -65,6 +69,7 @@ func run() (err error) {
 	n.UseFunc(secure.New(secure.Options{
 		SSLRedirect:     true,
 		SSLProxyHeaders: map[string]string{"X-Forwarded-Proto": "https"},
+		IsDevelopment:   isDevelopment,
 	}).HandlerFuncWithNext)
 
 	n.Use(tokenMiddleware(accessToken))
