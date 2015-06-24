@@ -1,2 +1,2 @@
-# salsaflow-commits
-A simple store with HTTP API for keeping commit-related metadata
+# salsaflow-metastore
+A simple store with HTTP API for keeping various SalsaFlow metadata.
