@@ -97,7 +97,7 @@ func bearerTokenMiddleware(accessToken string) negroni.Handler {
 		func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 			// Make sure the token header matches.
 			if header := r.Header.Get("Authorization"); header != authorizationHeaderValue {
-				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				httpStatus(rw, http.StatusForbidden)
 				return
 			}
 
