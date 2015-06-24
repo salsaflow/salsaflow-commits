@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -44,7 +45,7 @@ func postMetadata(c *mgo.Collection) http.Handler {
 		// Parse the request.
 		var commits []map[string]interface{}
 		if err := json.NewDecoder(r.Body).Decode(&commits); err != nil {
-			httpStatus(rw, http.StatusBadRequest)
+			httpBadRequest(rw, "Not an array of commit objects")
 			return
 		}
 
@@ -52,16 +53,16 @@ func postMetadata(c *mgo.Collection) http.Handler {
 		for _, commit := range commits {
 			v, ok := commit[CommitShaField]
 			if !ok {
-				httpStatus(rw, http.StatusBadRequest)
+				httpBadRequest(rw, fmt.Sprintf("key '%v' is missing", CommitShaField))
 				return
 			}
 			sha, ok := v.(string)
 			if !ok {
-				httpStatus(rw, http.StatusBadRequest)
+				httpBadRequest(rw, fmt.Sprintf("key '%v': not a string", CommitShaField))
 				return
 			}
 			if !isSHA(sha) {
-				httpStatus(rw, http.StatusBadRequest)
+				httpBadRequest(rw, fmt.Sprintf("key '%v': not a valid commit SHA", CommitShaField))
 				return
 			}
 		}
