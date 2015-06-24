@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"regexp"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/gorilla/mux"
 )
 
 func getMetadata(conn redis.Conn) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		sha := mux.Vars(r)["sha"]
+		sha := r.URL.Query().Get(":sha")
+		if !isSHA(sha) {
+			httpStatus(rw, http.StatusNotFound)
+			return
+		}
+
 		content, err := redis.String(conn.Do("GET", sha))
 		if err != nil {
 			httpError(rw, r, err)
@@ -24,7 +29,11 @@ func getMetadata(conn redis.Conn) http.Handler {
 
 func postMetadata(conn redis.Conn) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		sha := mux.Vars(r)["sha"]
+		sha := r.URL.Query().Get(":sha")
+		if !isSHA(sha) {
+			httpStatus(rw, http.StatusNotFound)
+			return
+		}
 
 		var metadata bytes.Buffer
 		if _, err := io.Copy(&metadata, r.Body); err != nil {
@@ -51,4 +60,8 @@ func postMetadataBatch(conn redis.Conn) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		httpStatus(rw, http.StatusNotImplemented)
 	})
+}
+
+func isSHA(sha string) bool {
+	return regexp.MustCompile("^[0-9a-f]{40}$").MatchString(sha)
 }

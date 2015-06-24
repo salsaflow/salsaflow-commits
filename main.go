@@ -7,14 +7,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/bmizerany/pat"
 	"github.com/codegangsta/negroni"
 	"github.com/garyburd/redigo/redis"
-	"github.com/gorilla/mux"
 	"github.com/unrolled/secure"
 	"gopkg.in/tylerb/graceful.v1"
 )
-
-const TokenHeader = "X-SalsaFlow-Token"
 
 func main() {
 	if err := run(); err != nil {
@@ -52,34 +50,28 @@ func run() (err error) {
 		return err
 	}
 
-	conn, err := redis.Dial("tcp", redisURL.Host)
+	redisConn, err := redis.Dial("tcp", redisURL.Host)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer redisConn.Close()
 
 	if redisURL.User != nil {
 		redisPwd, _ := redisURL.User.Password()
-		if _, err := conn.Do("AUTH", redisPwd); err != nil {
+		if _, err := redisConn.Do("AUTH", redisPwd); err != nil {
 			return err
 		}
 	}
 
-	// Router.
-	router := mux.NewRouter()
+	// Mux.
+	mux := pat.New()
 
 	// Commits.
-	router.Handle("/commits", getMetadataBatch(conn))
+	mux.Get("/commits", getMetadataBatch(redisConn))
+	mux.Get("/commits/:sha", getMetadata(redisConn))
 
-	/*
-		commits := router.PathPrefix("/commits")
-		commits.Methods("GET").Handler(getMetadataBatch(conn))
-		commits.Methods("POST").Handler(postMetadataBatch(conn))
-
-		commit := commits.PathPrefix("/{sha:[0-9a-f]{40}}")
-		commit.Methods("GET").Handler(getMetadata(conn))
-		commit.Methods("POST").Handler(postMetadata(conn))
-	*/
+	mux.Post("/commits", postMetadataBatch(redisConn))
+	mux.Post("/commits/:sha", postMetadata(redisConn))
 
 	// Negroni middleware.
 	n := negroni.New(negroni.NewRecovery(), negroni.NewLogger())
@@ -90,19 +82,21 @@ func run() (err error) {
 		IsDevelopment:   isDevelopment,
 	}).HandlerFuncWithNext)
 
-	n.Use(tokenMiddleware(accessToken))
-	n.UseHandler(router)
+	n.Use(bearerTokenMiddleware(accessToken))
+	n.UseHandler(mux)
 
 	// Start the server using graceful.
 	graceful.Run(addr, 3*time.Second, n)
 	return nil
 }
 
-func tokenMiddleware(accessToken string) negroni.Handler {
+func bearerTokenMiddleware(accessToken string) negroni.Handler {
+	authorizationHeaderValue := "Bearer " + accessToken
+
 	return negroni.HandlerFunc(
 		func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 			// Make sure the token header matches.
-			if token := r.Header.Get(TokenHeader); token != accessToken {
+			if header := r.Header.Get("Authorization"); header != authorizationHeaderValue {
 				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
