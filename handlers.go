@@ -23,7 +23,7 @@ func getMetadata(c *mgo.Collection) http.Handler {
 		// Fetch the associated DB record.
 		var commit map[string]interface{}
 		err := c.Find(bson.M{
-			"commit_sha": sha,
+			CommitShaField: sha,
 		}).One(&commit)
 		if err != nil {
 			if err == mgo.ErrNotFound {
@@ -55,7 +55,7 @@ func postMetadata(c *mgo.Collection) http.Handler {
 
 		// Make sure the commit SHAs are there.
 		for _, commit := range commits {
-			v, ok := commit["commit_sha"]
+			v, ok := commit[CommitShaField]
 			if !ok {
 				httpStatus(rw, http.StatusBadRequest)
 				return
@@ -73,10 +73,10 @@ func postMetadata(c *mgo.Collection) http.Handler {
 
 		// Store the commit records.
 		for _, commit := range commits {
-			sha := commit["commit_sha"].(string)
+			sha := commit[CommitShaField].(string)
 
 			// Write the commit record into the database.
-			if _, err := c.Upsert(bson.M{"commit_sha": sha}, commit); err != nil {
+			if _, err := c.Upsert(bson.M{CommitShaField: sha}, commit); err != nil {
 				httpError(rw, r, err)
 				return
 			}

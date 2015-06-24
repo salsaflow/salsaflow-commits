@@ -15,6 +15,7 @@ import (
 const (
 	MongoDatabaseName   = ""
 	MongoCollectionName = "commits"
+	CommitShaField      = "commit_sha"
 )
 
 func main() {
@@ -42,6 +43,17 @@ func run() (err error) {
 	})
 
 	collection := mgoSession.DB(MongoDatabaseName).C(MongoCollectionName)
+
+	// Ensure index.
+	err = collection.EnsureIndex(mgo.Index{
+		Name:       "commit hashes",
+		Key:        []string{CommitShaField},
+		Unique:     true,
+		Background: true,
+	})
+	if err != nil {
+		return err
+	}
 
 	// Mux.
 	mux := pat.New()
