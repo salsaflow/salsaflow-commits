@@ -21,7 +21,7 @@ func mustGetenv(key string) (value string) {
 	return v
 }
 
-func recoverEnvironPanic(err *error) {
+func recoverEnvironmentPanic(err *error) {
 	if r := recover(); r != nil {
 		if ex, ok := r.(*ErrVarNotSet); ok {
 			*err = ex

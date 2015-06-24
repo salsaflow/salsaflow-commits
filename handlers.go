@@ -2,63 +2,88 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
 	"regexp"
 
-	"github.com/garyburd/redigo/redis"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
-func getMetadata(conn redis.Conn) http.Handler {
+func getMetadata(c *mgo.Collection) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		// Get the commit SHA.
 		sha := r.URL.Query().Get(":sha")
 		if !isSHA(sha) {
 			httpStatus(rw, http.StatusNotFound)
 			return
 		}
 
-		content, err := redis.String(conn.Do("GET", sha))
+		// Fetch the associated DB record.
+		var commit map[string]interface{}
+		err := c.Find(bson.M{
+			"commit_sha": sha,
+		}).One(&commit)
 		if err != nil {
+			if err == mgo.ErrNotFound {
+				httpStatus(rw, http.StatusNotFound)
+				return
+			}
 			httpError(rw, r, err)
 			return
 		}
 
-		io.WriteString(rw, content)
+		// Return the record.
+		var payload bytes.Buffer
+		if err := json.NewEncoder(&payload).Encode(commit); err != nil {
+			httpError(rw, r, err)
+			return
+		}
+		io.Copy(rw, &payload)
 	})
 }
 
-func postMetadata(conn redis.Conn) http.Handler {
+func postMetadata(c *mgo.Collection) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		sha := r.URL.Query().Get(":sha")
-		if !isSHA(sha) {
-			httpStatus(rw, http.StatusNotFound)
+		// Parse the request.
+		var commits []map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&commits); err != nil {
+			httpStatus(rw, http.StatusBadRequest)
 			return
 		}
 
-		var metadata bytes.Buffer
-		if _, err := io.Copy(&metadata, r.Body); err != nil {
-			httpError(rw, r, err)
-			return
+		// Make sure the commit SHAs are there.
+		for _, commit := range commits {
+			v, ok := commit["commit_sha"]
+			if !ok {
+				httpStatus(rw, http.StatusBadRequest)
+				return
+			}
+			sha, ok := v.(string)
+			if !ok {
+				httpStatus(rw, http.StatusBadRequest)
+				return
+			}
+			if !isSHA(sha) {
+				httpStatus(rw, http.StatusBadRequest)
+				return
+			}
 		}
 
-		if _, err := conn.Do("SET", sha, metadata.String()); err != nil {
-			httpError(rw, r, err)
-			return
+		// Store the commit records.
+		for _, commit := range commits {
+			sha := commit["commit_sha"].(string)
+
+			// Write the commit record into the database.
+			if _, err := c.Upsert(bson.M{"commit_sha": sha}, commit); err != nil {
+				httpError(rw, r, err)
+				return
+			}
 		}
 
+		// Return 202 Accepted.
 		httpStatus(rw, http.StatusAccepted)
-	})
-}
-
-func getMetadataBatch(conn redis.Conn) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		httpStatus(rw, http.StatusNotImplemented)
-	})
-}
-
-func postMetadataBatch(conn redis.Conn) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		httpStatus(rw, http.StatusNotImplemented)
 	})
 }
 
