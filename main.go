@@ -26,11 +26,25 @@ func run() (err error) {
 	defer recoverEnvironPanic(&err)
 
 	var (
-		addr          = ":" + mustGetenv("PORT")
+		host          = os.Getenv("HOST")
+		port          = os.Getenv("PORT")
 		rediscloudURL = mustGetenv("REDISCLOUD_URL")
 		accessToken   = mustGetenv("ACCESS_TOKEN")
 		isDevelopment = os.Getenv("DEVEL") != ""
 	)
+
+	// Get the listening address.
+	// When testing on localhost, it's enough to set HOST.
+	// On the other hand, Heroku is setting PORT.
+	var addr string
+	switch {
+	case host != "":
+		addr = host
+	case port != "":
+		addr = ":" + port
+	default:
+		panic(&ErrVarNotSet{"PORT"})
+	}
 
 	// Connect to Redis.
 	redisURL, err := url.Parse(rediscloudURL)
@@ -55,13 +69,17 @@ func run() (err error) {
 	router := mux.NewRouter()
 
 	// Commits.
-	commits := router.PathPrefix("/commits")
-	commits.Methods("GET").Handler(getMetadataBatch(conn))
-	commits.Methods("POST").Handler(postMetadataBatch(conn))
+	router.Handle("/commits", getMetadataBatch(conn))
 
-	commit := commits.PathPrefix("/{sha:[0-9a-f]{40}}")
-	commit.Methods("GET").Handler(getMetadata(conn))
-	commit.Methods("POST").Handler(postMetadata(conn))
+	/*
+		commits := router.PathPrefix("/commits")
+		commits.Methods("GET").Handler(getMetadataBatch(conn))
+		commits.Methods("POST").Handler(postMetadataBatch(conn))
+
+		commit := commits.PathPrefix("/{sha:[0-9a-f]{40}}")
+		commit.Methods("GET").Handler(getMetadata(conn))
+		commit.Methods("POST").Handler(postMetadata(conn))
+	*/
 
 	// Negroni middleware.
 	n := negroni.New(negroni.NewRecovery(), negroni.NewLogger())
