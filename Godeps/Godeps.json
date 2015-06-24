@@ -6,38 +6,34 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/bmizerany/pat",
+			"Rev": "b8a35001b773c267eb260a691f4e5499a3531600"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "3e4727f0ef5938d3a846cdb57e560dba4419e854"
+			"Rev": "8b1d80a45a732e6d95e22dcc2e067312c664936c"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "3e4727f0ef5938d3a846cdb57e560dba4419e854"
-		},
-		{
-			"ImportPath": "github.com/gorilla/context",
-			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
-		},
-		{
-			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "94903de8c98a68d8b4483c529b26a5d146e386a2"
+			"Rev": "8b1d80a45a732e6d95e22dcc2e067312c664936c"
 		},
 		{
 			"ImportPath": "github.com/unrolled/secure",
-			"Rev": "d7ac41e0d2285f21b11f9fc21045900ad7a72ad8"
+			"Rev": "b0dfc4c016790a7c4c3a64dbb54d42e21cfaf471"
 		},
 		{
 			"ImportPath": "golang.org/x/net/netutil",
-			"Rev": "7212a0803472eb1ec2686896a7c626528172a7a6"
+			"Rev": "933937213561306ee71d265fb8a2913f20a55123"
 		},
 		{
 			"ImportPath": "gopkg.in/tylerb/graceful.v1",
-			"Comment": "v1.1",
-			"Rev": "ff79a7f00848198d26054b472aafb1043c4b3507"
+			"Comment": "v1.2.1",
+			"Rev": "ac9ebe4f1ee151ac1eeeaef32957085cba64d508"
 		}
 	]
 }
